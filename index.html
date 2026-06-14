@@ -1,0 +1,1897 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>설문 설계 Agent 에디</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #eef6ff;
+      --card: #ffffff;
+      --primary: #2f6fed;
+      --primary-dark: #1f4fbf;
+      --primary-soft: #dfeeff;
+      --text: #1f2937;
+      --muted: #64748b;
+      --line: #dbe4f0;
+      --soft-line: #edf2f7;
+      --good: #16a34a;
+      --warn: #f59e0b;
+      --bad: #ef4444;
+      --shadow: 0 16px 36px rgba(29, 78, 216, 0.12);
+      --radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Pretendard", "Noto Sans KR", Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, #d6ebff 0, transparent 33%),
+        linear-gradient(135deg, #eef6ff 0%, #f7fbff 48%, #eaf3ff 100%);
+      color: var(--text);
+    }
+
+    .app {
+      width: min(1440px, calc(100% - 32px));
+      margin: 30px auto 60px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 55%, #93c5fd 100%);
+      color: white;
+      border-radius: 28px;
+      padding: 30px 32px;
+      box-shadow: var(--shadow);
+      margin-bottom: 22px;
+    }
+
+    .hero-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.18);
+      font-size: 13px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    h1 {
+      margin: 18px 0 8px;
+      font-size: 34px;
+      line-height: 1.2;
+      letter-spacing: -0.04em;
+    }
+
+    .hero p {
+      margin: 0;
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 16px;
+      line-height: 1.7;
+    }
+
+    .stepper {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    .step-card {
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px 18px;
+      box-shadow: 0 8px 22px rgba(29, 78, 216, 0.08);
+      opacity: 0.64;
+    }
+
+    .step-card.active {
+      opacity: 1;
+      border-color: #93c5fd;
+      box-shadow: var(--shadow);
+    }
+
+    .step-card.done {
+      opacity: 0.82;
+    }
+
+    .step-card .num {
+      display: inline-flex;
+      width: 26px;
+      height: 26px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+      font-weight: 950;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    .step-card strong {
+      display: block;
+      font-size: 15px;
+      letter-spacing: -0.03em;
+    }
+
+    .step-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 4px;
+      line-height: 1.5;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid rgba(219, 228, 240, 0.95);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 21px 24px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    }
+
+    .card-header h2 {
+      margin: 0;
+      font-size: 19px;
+      letter-spacing: -0.03em;
+    }
+
+    .card-header p {
+      margin: 7px 0 0;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .card-body {
+      padding: 24px;
+    }
+
+    .screen {
+      display: none;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    .input-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      display: block;
+      font-weight: 900;
+      font-size: 13px;
+      margin-bottom: 8px;
+      color: #26364d;
+    }
+
+    .required {
+      color: var(--primary);
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      padding: 12px 13px;
+      font-size: 14px;
+      color: var(--text);
+      background: white;
+      outline: none;
+      transition: border 0.2s, box-shadow 0.2s;
+      font-family: inherit;
+    }
+
+    textarea {
+      min-height: 94px;
+      resize: vertical;
+      line-height: 1.55;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: #60a5fa;
+      box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.18);
+    }
+
+    .field {
+      margin-bottom: 0;
+    }
+
+    .radio-box {
+      display: grid;
+      gap: 8px;
+    }
+
+    .radio-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 11px 12px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: #f8fbff;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .radio-item input {
+      width: auto;
+      margin: 0;
+    }
+
+    details {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #f8fbff;
+      overflow: hidden;
+    }
+
+    summary {
+      cursor: pointer;
+      padding: 15px 16px;
+      font-weight: 950;
+      font-size: 14px;
+      color: #1f3a5f;
+    }
+
+    .details-inner {
+      padding: 0 16px 18px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+      border-radius: 13px;
+      padding: 12px 16px;
+      font-weight: 950;
+      font-size: 14px;
+      font-family: inherit;
+      transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 10px 22px rgba(47, 111, 237, 0.24);
+      padding: 14px 20px;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-secondary {
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+    }
+
+    .btn-ghost {
+      background: #f3f7fb;
+      color: #334155;
+      border: 1px solid var(--line);
+    }
+
+    .btn-danger {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .notice-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .notice {
+      border-radius: 16px;
+      padding: 15px 16px;
+      background: #f8fbff;
+      border: 1px solid var(--line);
+    }
+
+    .notice h3,
+    .notice h4 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      letter-spacing: -0.03em;
+    }
+
+    .notice p {
+      margin: 0;
+      color: #475569;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .notice ul {
+      margin: 0;
+      padding-left: 18px;
+      color: #475569;
+      line-height: 1.75;
+      font-size: 13px;
+    }
+
+    .summary-panel {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .summary-card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 15px;
+      background: #f8fbff;
+    }
+
+    .summary-card .k {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+      margin-bottom: 7px;
+    }
+
+    .summary-card .v {
+      font-size: 16px;
+      font-weight: 950;
+      line-height: 1.4;
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin: 4px 0 12px;
+      flex-wrap: wrap;
+    }
+
+    .section-title h3 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: -0.03em;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: white;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 980px;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid var(--soft-line);
+      padding: 12px 12px;
+      vertical-align: top;
+      font-size: 14px;
+      line-height: 1.58;
+    }
+
+    th {
+      background: #f3f8ff;
+      color: #334155;
+      font-weight: 950;
+      white-space: nowrap;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .draft-table td.cell-question {
+      font-size: 16px;
+      line-height: 1.65;
+      font-weight: 700;
+      min-width: 420px;
+      color: #172033;
+    }
+
+    .draft-table td.cell-options {
+      min-width: 260px;
+    }
+
+    .draft-table td[contenteditable="true"] {
+      background: #fffdf5;
+      outline: none;
+    }
+
+    .draft-table td[contenteditable="true"]:focus {
+      box-shadow: inset 0 0 0 2px rgba(47, 111, 237, 0.25);
+      background: #ffffff;
+    }
+
+    .mini-select {
+      min-width: 130px;
+      padding: 8px 9px;
+      border-radius: 10px;
+      font-size: 13px;
+    }
+
+    .mini-check {
+      width: 18px;
+      height: 18px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 950;
+      background: #edf5ff;
+      color: var(--primary-dark);
+      white-space: nowrap;
+    }
+
+    .feedback-box {
+      margin-top: 20px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #f8fbff;
+    }
+
+    .feedback-box textarea {
+      min-height: 116px;
+      background: white;
+      font-size: 15px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 14px 18px 0;
+      border-bottom: 1px solid var(--line);
+      background: #fbfdff;
+    }
+
+    .tab-btn {
+      background: transparent;
+      color: var(--muted);
+      border-radius: 12px 12px 0 0;
+      padding: 12px 14px;
+      border: 1px solid transparent;
+      border-bottom: 0;
+      font-size: 13px;
+    }
+
+    .tab-btn.active {
+      background: white;
+      color: var(--primary-dark);
+      border-color: var(--line);
+      box-shadow: 0 -4px 12px rgba(30, 64, 175, 0.04);
+    }
+
+    .tab-content {
+      display: none;
+      padding: 20px;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(239, 246, 255, 0.78);
+      backdrop-filter: blur(8px);
+      display: none;
+      place-items: center;
+      z-index: 999;
+    }
+
+    .loading-overlay.active {
+      display: grid;
+    }
+
+    .loading-box {
+      width: min(430px, calc(100% - 36px));
+      background: white;
+      border-radius: 22px;
+      padding: 26px;
+      box-shadow: var(--shadow);
+      text-align: center;
+      border: 1px solid var(--line);
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 5px solid #dbeafe;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .error-box {
+      display: none;
+      margin-bottom: 16px;
+      border-radius: 15px;
+      padding: 14px 16px;
+      background: #fff1f2;
+      border: 1px solid #fecdd3;
+      color: #991b1b;
+      font-size: 13px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    .error-box.active {
+      display: block;
+    }
+
+    @media (max-width: 980px) {
+      .stepper,
+      .input-grid,
+      .details-inner,
+      .notice-grid,
+      .summary-panel {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .app {
+        width: min(100% - 20px, 1440px);
+        margin-top: 16px;
+      }
+
+      .hero {
+        padding: 24px;
+        border-radius: 22px;
+      }
+
+      h1 {
+        font-size: 27px;
+      }
+
+      .card-body {
+        padding: 18px;
+      }
+
+      th,
+      td {
+        font-size: 13px;
+      }
+
+      .draft-table td.cell-question {
+        font-size: 15px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-box">
+      <div class="spinner"></div>
+      <h3 id="loadingTitle">에디 V2.1이 처리 중입니다</h3>
+      <p class="hint" id="loadingText">잠시만 기다려 주세요.</p>
+    </div>
+  </div>
+
+  <main class="app">
+    <section class="hero">
+      <div class="hero-top">
+        <div class="badge">😎 Eddie V2.1 · Survey Design Agent</div>
+        <div class="badge">초안 → 진단 → 피드백 → 최종 리포트</div>
+      </div>
+      <h1>에디 V2.1 설문 설계 Agent</h1>
+      <p>
+        한 번에 완성본을 던져주는 방식이 아니라, 초안 생성 후 약점을 함께 확인하고
+        사용자 피드백을 반영해 최종 설문과 설계 리포트를 생성합니다.
+      </p>
+    </section>
+
+    <section class="stepper">
+      <div class="step-card active" id="stepCard1">
+        <div class="num">1</div>
+        <strong>설계 입력</strong>
+        <span>주제, 목적, 대상자 입력</span>
+      </div>
+      <div class="step-card" id="stepCard2">
+        <div class="num">2</div>
+        <strong>초안 검토</strong>
+        <span>문항 선택·수정·피드백</span>
+      </div>
+      <div class="step-card" id="stepCard3">
+        <div class="num">3</div>
+        <strong>최종 리포트</strong>
+        <span>5개 탭 산출물 생성</span>
+      </div>
+    </section>
+
+    <div class="error-box" id="errorBox"></div>
+
+    <section class="screen active" id="screen1">
+      <div class="card">
+        <div class="card-header">
+          <h2>① 설문 설계 입력</h2>
+          <p>필수 3가지만 입력해도 에디가 설문 유형과 적정 문항 수를 자동 판단합니다.</p>
+        </div>
+
+        <div class="card-body">
+          <form id="inputForm">
+            <div class="input-grid">
+              <div class="field full">
+                <label for="topic">설문 주제 <span class="required">*</span></label>
+                <input id="topic" placeholder="예: 생성형 AI 교육 만족도 조사" />
+              </div>
+
+              <div class="field full">
+                <label for="purpose">설문 목적 <span class="required">*</span></label>
+                <textarea id="purpose" placeholder="예: 교육 만족도와 업무 적용 가능성을 파악하고 향후 교육 개선점을 도출"></textarea>
+              </div>
+
+              <div class="field full">
+                <label for="target">응답 대상 <span class="required">*</span></label>
+                <input id="target" placeholder="예: 전사 임직원 중 교육 수강자" />
+              </div>
+
+              <div class="field">
+                <label for="surveyType">설문 유형</label>
+                <select id="surveyType">
+                  <option value="auto">에디가 자동 판단</option>
+                  <option value="교육 만족도 조사">교육 만족도 조사</option>
+                  <option value="행사/간담회 만족도 조사">행사/간담회 만족도 조사</option>
+                  <option value="조직문화 진단">조직문화 진단</option>
+                  <option value="워라밸 진단">워라밸 진단</option>
+                  <option value="심리적 안정감 진단">심리적 안정감 진단</option>
+                  <option value="서비스/시설 만족도 조사">서비스/시설 만족도 조사</option>
+                  <option value="제도/프로그램 만족도 조사">제도/프로그램 만족도 조사</option>
+                  <option value="리더십/관리자 진단">리더십/관리자 진단</option>
+                  <option value="기타">기타</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label>문항 수 설정</label>
+                <div class="radio-box">
+                  <label class="radio-item">
+                    <input type="radio" name="questionCountMode" value="auto" checked />
+                    에디가 적정 문항 수 추천
+                  </label>
+                  <label class="radio-item">
+                    <input type="radio" name="questionCountMode" value="fixed" />
+                    직접 문항 수 지정
+                  </label>
+                  <label class="radio-item">
+                    <input type="radio" name="questionCountMode" value="pool" />
+                    후보 문항을 넉넉히 생성 후 선택
+                  </label>
+                </div>
+              </div>
+
+              <div class="field hidden" id="fixedCountBox">
+                <label for="desiredQuestionCount">최종 문항 수</label>
+                <input id="desiredQuestionCount" type="number" min="3" max="40" value="12" />
+              </div>
+
+              <div class="field hidden" id="candidateCountBox">
+                <label for="candidateQuestionCount">초안 후보 문항 수</label>
+                <input id="candidateQuestionCount" type="number" min="8" max="50" value="18" />
+              </div>
+
+              <div class="field full">
+                <details>
+                  <summary>고급 옵션 열기</summary>
+                  <div class="details-inner">
+                    <div class="field">
+                      <label for="existingQuestions">기존 문항</label>
+                      <textarea id="existingQuestions" placeholder="기존 설문 문항을 붙여넣으면 에디가 품질 기준에 따라 개선합니다."></textarea>
+                    </div>
+
+                    <div class="field">
+                      <label for="mustInclude">꼭 반영할 내용</label>
+                      <textarea id="mustInclude" placeholder="예: 업무 적용 가능성, 추가 교육 니즈, 개선 우선순위"></textarea>
+                    </div>
+
+                    <div class="field">
+                      <label for="exclude">제외할 내용</label>
+                      <textarea id="exclude" placeholder="예: 개인정보 직접 질문, 민감한 건강정보, 부정형 문항"></textarea>
+                    </div>
+
+                    <div class="field">
+                      <label for="additionalContext">추가 참고사항</label>
+                      <textarea id="additionalContext" placeholder="교육 내용, 행사 구성, 운영 방식, 설문 배경 등을 입력하세요."></textarea>
+                    </div>
+                  </div>
+                </details>
+              </div>
+            </div>
+
+            <div class="btn-row">
+              <button type="submit" class="btn-primary">설문 초안 생성하기</button>
+              <button type="button" class="btn-ghost" onclick="fillSample()">예시 입력</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="screen2">
+      <div class="card">
+        <div class="card-header">
+          <h2>② 초안 검토 / 자동진단 / 피드백</h2>
+          <p>에디가 만든 초안 문항을 선택·수정하고, 원하는 방향을 피드백으로 입력해 재생성할 수 있습니다.</p>
+        </div>
+
+        <div class="card-body">
+          <div class="summary-panel" id="draftSummaryPanel"></div>
+
+          <div class="notice-grid">
+            <div class="notice">
+              <h3>에디가 본 설계 중점</h3>
+              <div id="draftDesignFocus"></div>
+            </div>
+            <div class="notice">
+              <h3>초안 보완 포인트</h3>
+              <div id="draftWeaknesses"></div>
+            </div>
+          </div>
+
+          <div class="notice-grid">
+            <div class="notice">
+              <h3>초안의 강점</h3>
+              <div id="draftStrengths"></div>
+            </div>
+            <div class="notice">
+              <h3>추천 수정 방향</h3>
+              <div id="draftDirections"></div>
+            </div>
+          </div>
+
+          <div class="section-title">
+            <div>
+              <h3>초안 문항</h3>
+              <div class="hint">문항을 크게 보이도록 구성했습니다. 노란색 셀은 직접 수정할 수 있고, 체크된 문항만 다음 단계로 넘어갑니다.</div>
+            </div>
+            <span class="pill" id="draftCountPill">0개 문항</span>
+          </div>
+
+          <div id="draftTableArea"></div>
+
+          <div class="feedback-box">
+            <label for="userFeedback">에디에게 수정 요청하기</label>
+            <textarea id="userFeedback" placeholder="예: 5점 척도를 줄이고 행동 기반 문항을 늘려줘. 교육 만족도보다 업무 적용 가능성 중심으로 바꿔줘. 자유응답을 줄이고 객관식으로 바꿔줘."></textarea>
+
+            <div class="hint" id="feedbackExamples" style="margin-top:8px;"></div>
+
+            <div class="btn-row">
+              <button type="button" class="btn-secondary" onclick="refineDraft()">피드백 반영해서 재생성</button>
+              <button type="button" class="btn-primary" onclick="finalizeSurvey()">이 문항으로 최종 확정</button>
+              <button type="button" class="btn-ghost" onclick="goToScreen(1)">입력 수정하기</button>
+              <button type="button" class="btn-danger" onclick="resetAll()">처음부터 다시</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="screen3">
+      <div class="card">
+        <div class="card-header">
+          <h2>③ 최종 산출물</h2>
+          <p>사용자가 확정한 최종 문항을 기준으로 척도·기법 매핑, 설계 진단, 결과 해석 가이드, 개선 로그를 제공합니다.</p>
+        </div>
+
+        <div class="card-body">
+          <div class="summary-panel" id="finalSummaryPanel"></div>
+
+          <div class="btn-row">
+            <button class="btn-secondary" type="button" onclick="downloadSurveyExcel()">최종 설문지 엑셀</button>
+            <button class="btn-secondary" type="button" onclick="downloadReportExcel()">설계 리포트 엑셀</button>
+            <button class="btn-ghost" type="button" onclick="downloadFullExcel()">전체 통합 엑셀</button>
+            <button class="btn-ghost" type="button" onclick="goToScreen(2)">초안으로 돌아가기</button>
+          </div>
+        </div>
+
+        <nav class="tabs">
+          <button class="tab-btn active" type="button" data-tab="finalSurvey">① 최종 설문지</button>
+          <button class="tab-btn" type="button" data-tab="mapping">② 척도·기법 매핑</button>
+          <button class="tab-btn" type="button" data-tab="diagnosis">③ 설계 진단</button>
+          <button class="tab-btn" type="button" data-tab="interpretation">④ 결과 해석 가이드</button>
+          <button class="tab-btn" type="button" data-tab="log">⑤ 개선 로그</button>
+        </nav>
+
+        <section class="tab-content active" id="tab-finalSurvey"></section>
+        <section class="tab-content" id="tab-mapping"></section>
+        <section class="tab-content" id="tab-diagnosis"></section>
+        <section class="tab-content" id="tab-interpretation"></section>
+        <section class="tab-content" id="tab-log"></section>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    /****************************************************
+     * Eddie V2.1 Frontend
+     ****************************************************/
+
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbwYwng96IVChqWR31jKDp0abje4bY-GVaVOnw1aqPf85usqVp8jTYFCz1kpIl2sGjw3/exec";
+
+    const QUESTION_TYPES = [
+      ["scale5", "5점 척도"],
+      ["scale7", "7점 척도"],
+      ["single", "객관식 단일선택"],
+      ["multiple", "복수선택"],
+      ["short", "단답형"],
+      ["paragraph", "장문형"],
+      ["frequency", "빈도형"],
+      ["ranking", "순위형"],
+      ["nps", "NPS 추천의향"],
+      ["matrix", "행렬형"]
+    ];
+
+    const appState = {
+      originalInput: null,
+      originalDraftSurvey: [],
+      currentSurvey: [],
+      feedbackHistory: [],
+      changeHistory: [],
+      draftSummary: null,
+      draftDiagnosis: null,
+      finalReport: null
+    };
+
+    document.addEventListener("DOMContentLoaded", () => {
+      bindEvents();
+      updateQuestionCountMode();
+      goToScreen(1);
+    });
+
+    function bindEvents() {
+      document.getElementById("inputForm").addEventListener("submit", createDraft);
+
+      document.querySelectorAll("input[name='questionCountMode']").forEach(radio => {
+        radio.addEventListener("change", updateQuestionCountMode);
+      });
+
+      document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.addEventListener("click", () => activateTab(btn.dataset.tab));
+      });
+    }
+
+    function updateQuestionCountMode() {
+      const mode = getCheckedValue("questionCountMode");
+      document.getElementById("fixedCountBox").classList.toggle("hidden", mode !== "fixed");
+      document.getElementById("candidateCountBox").classList.toggle("hidden", mode !== "pool");
+    }
+
+    /****************************************************
+     * Step 1. Create Draft
+     ****************************************************/
+
+    async function createDraft(event) {
+      event.preventDefault();
+      clearError();
+
+      const payload = collectDesignInput();
+
+      if (!validateDesignInput(payload)) return;
+      if (!validateBackendUrl()) return;
+
+      setLoading(true, "초안 설문을 생성하는 중입니다", "설문 유형과 적정 문항 수를 판단하고 초안의 보완 포인트를 함께 찾고 있습니다.");
+
+      try {
+        const result = await postToBackend(payload);
+
+        if (!result.success) {
+          throw new Error(result.message || "초안 생성 중 오류가 발생했습니다.");
+        }
+
+        appState.originalInput = result.input || payload;
+        appState.originalDraftSurvey = clone(result.data.draftSurvey || []);
+        appState.currentSurvey = clone(result.data.draftSurvey || []);
+        appState.feedbackHistory = [];
+        appState.changeHistory = [];
+        appState.draftSummary = result.data.draftSummary || {};
+        appState.draftDiagnosis = result.data.draftDiagnosis || {};
+        appState.finalReport = null;
+
+        renderDraftScreen();
+        goToScreen(2);
+
+      } catch (error) {
+        showError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    function collectDesignInput() {
+      return {
+        action: "createDraftSurvey",
+        topic: valueOf("topic"),
+        purpose: valueOf("purpose"),
+        target: valueOf("target"),
+        surveyType: valueOf("surveyType"),
+        questionCountMode: getCheckedValue("questionCountMode"),
+        desiredQuestionCount: numberValueOf("desiredQuestionCount"),
+        candidateQuestionCount: numberValueOf("candidateQuestionCount"),
+        existingQuestions: valueOf("existingQuestions"),
+        mustInclude: valueOf("mustInclude"),
+        exclude: valueOf("exclude"),
+        additionalContext: valueOf("additionalContext"),
+        outputLanguage: "ko"
+      };
+    }
+
+    function validateDesignInput(payload) {
+      const missing = [];
+
+      if (!payload.topic) missing.push("설문 주제");
+      if (!payload.purpose) missing.push("설문 목적");
+      if (!payload.target) missing.push("응답 대상");
+
+      if (missing.length > 0) {
+        showError("필수 입력값이 누락되었습니다: " + missing.join(", "));
+        return false;
+      }
+
+      if (payload.questionCountMode === "fixed" && (!payload.desiredQuestionCount || payload.desiredQuestionCount < 3)) {
+        showError("직접 문항 수 지정 시 최종 문항 수는 3개 이상이어야 합니다.");
+        return false;
+      }
+
+      return true;
+    }
+
+    /****************************************************
+     * Step 2. Draft Review / Refine
+     ****************************************************/
+
+    async function refineDraft() {
+      clearError();
+
+      const currentSurvey = getSelectedDraftRows();
+
+      if (!currentSurvey.length) {
+        showError("수정할 문항을 1개 이상 선택해 주세요.");
+        return;
+      }
+
+      const userFeedback = valueOf("userFeedback");
+
+      if (!userFeedback) {
+        showError("에디에게 반영할 수정 요청을 입력해 주세요.");
+        return;
+      }
+
+      if (!validateBackendUrl()) return;
+
+      const payload = {
+        action: "refineDraftSurvey",
+        originalInput: appState.originalInput,
+        currentSurvey: currentSurvey,
+        userFeedback: userFeedback,
+        feedbackHistory: appState.feedbackHistory,
+        changeHistory: appState.changeHistory
+      };
+
+      setLoading(true, "피드백을 반영해 재생성하는 중입니다", "선택한 문항과 사용자 피드백을 기준으로 초안을 다시 다듬고 있습니다.");
+
+      try {
+        const result = await postToBackend(payload);
+
+        if (!result.success) {
+          throw new Error(result.message || "피드백 반영 중 오류가 발생했습니다.");
+        }
+
+        appState.currentSurvey = clone(result.data.revisedSurvey || []);
+        appState.draftDiagnosis = result.data.draftDiagnosis || {};
+        appState.feedbackHistory = clone(result.data.feedbackHistory || []);
+        appState.changeHistory = clone(result.data.changeHistory || []);
+
+        document.getElementById("userFeedback").value = "";
+        renderDraftScreen();
+
+      } catch (error) {
+        showError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    async function finalizeSurvey() {
+      clearError();
+
+      const finalSurvey = getSelectedDraftRows();
+
+      if (!finalSurvey.length) {
+        showError("최종 확정할 문항을 1개 이상 선택해 주세요.");
+        return;
+      }
+
+      if (!validateBackendUrl()) return;
+
+      const payload = {
+        action: "finalizeSurveyReport",
+        originalInput: appState.originalInput,
+        originalDraftSurvey: appState.originalDraftSurvey,
+        finalSurvey: finalSurvey,
+        feedbackHistory: appState.feedbackHistory,
+        changeHistory: appState.changeHistory
+      };
+
+      setLoading(true, "최종 리포트를 생성하는 중입니다", "최종 문항 기준으로 척도·기법 매핑, 설계 진단, 결과 해석 가이드, 개선 로그를 생성합니다.");
+
+      try {
+        const result = await postToBackend(payload);
+
+        if (!result.success) {
+          throw new Error(result.message || "최종 리포트 생성 중 오류가 발생했습니다.");
+        }
+
+        appState.finalReport = result.data;
+        renderFinalScreen(result.data);
+        goToScreen(3);
+
+      } catch (error) {
+        showError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    /****************************************************
+     * Render Step 2
+     ****************************************************/
+
+    function renderDraftScreen() {
+      renderDraftSummary();
+      renderDraftDiagnosis();
+      renderDraftTable(appState.currentSurvey || []);
+      renderFeedbackExamples();
+    }
+
+    function renderDraftSummary() {
+      const summary = appState.draftSummary || {};
+
+      const cards = [
+        ["판단 설문 유형", summary.inferredSurveyType || "-"],
+        ["추천 문항 수", summary.recommendedQuestionCount ? summary.recommendedQuestionCount + "개" : "-"],
+        ["문항 수 판단 이유", summary.questionCountReason || "-"],
+        ["설계 전략", summary.designStrategy || "-"]
+      ];
+
+      document.getElementById("draftSummaryPanel").innerHTML = cards.map(([k, v]) => `
+        <div class="summary-card">
+          <div class="k">${escapeHtml(k)}</div>
+          <div class="v">${escapeHtml(v)}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderDraftDiagnosis() {
+      const d = appState.draftDiagnosis || {};
+
+      document.getElementById("draftDesignFocus").innerHTML = renderList(d.designFocus);
+      document.getElementById("draftWeaknesses").innerHTML = renderList(d.weaknesses);
+      document.getElementById("draftStrengths").innerHTML = renderList(d.strengths);
+      document.getElementById("draftDirections").innerHTML = renderList(d.suggestedDirections);
+    }
+
+    function renderFeedbackExamples() {
+      const examples = appState.draftDiagnosis?.feedbackExamples || [];
+
+      if (!examples.length) {
+        document.getElementById("feedbackExamples").innerHTML = "";
+        return;
+      }
+
+      document.getElementById("feedbackExamples").innerHTML = `
+        <strong>예시 요청:</strong>
+        ${examples.map(item => `<button type="button" class="btn-ghost" style="padding:7px 9px; font-size:12px; margin:4px 4px 0 0;" onclick="appendFeedback('${escapeForJs(item)}')">${escapeHtml(item)}</button>`).join("")}
+      `;
+    }
+
+    function appendFeedback(text) {
+      const box = document.getElementById("userFeedback");
+      const current = box.value.trim();
+
+      if (current) {
+        box.value = current + "\n" + text;
+      } else {
+        box.value = text;
+      }
+
+      box.focus();
+    }
+
+    function renderDraftTable(items) {
+      document.getElementById("draftCountPill").textContent = `${items.length}개 문항`;
+
+      document.getElementById("draftTableArea").innerHTML = `
+        <div class="table-wrap">
+          <table class="draft-table">
+            <thead>
+              <tr>
+                <th>사용</th>
+                <th>No</th>
+                <th>구분</th>
+                <th>문항</th>
+                <th>유형</th>
+                <th>보기</th>
+                <th>필수여부</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${items.map((item, idx) => renderDraftRow(item, idx)).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderDraftRow(item, idx) {
+      return `
+        <tr class="draft-row" data-index="${idx}">
+          <td><input class="mini-check use-check" type="checkbox" checked></td>
+          <td class="cell-no">${idx + 1}</td>
+          <td class="cell-section" contenteditable="true">${escapeHtml(item.section || "")}</td>
+          <td class="cell-question" contenteditable="true">${escapeHtml(item.question || "")}</td>
+          <td>
+            <select class="mini-select cell-type">
+              ${QUESTION_TYPES.map(([value, label]) => `
+                <option value="${value}" ${item.type === value ? "selected" : ""}>${label}</option>
+              `).join("")}
+            </select>
+          </td>
+          <td class="cell-options" contenteditable="true">${escapeHtml(arrayToOptionsText(item.options || []))}</td>
+          <td><input class="mini-check cell-required" type="checkbox" ${item.required === false ? "" : "checked"}></td>
+        </tr>
+      `;
+    }
+
+    function getSelectedDraftRows() {
+      const rows = [];
+      const trs = document.querySelectorAll(".draft-row");
+
+      trs.forEach(tr => {
+        const checked = tr.querySelector(".use-check")?.checked;
+        if (!checked) return;
+
+        rows.push({
+          no: rows.length + 1,
+          section: textOfCell(tr, ".cell-section"),
+          question: textOfCell(tr, ".cell-question"),
+          type: tr.querySelector(".cell-type")?.value || "single",
+          options: optionsTextToArray(textOfCell(tr, ".cell-options")),
+          required: tr.querySelector(".cell-required")?.checked ? true : false
+        });
+      });
+
+      return rows;
+    }
+
+    /****************************************************
+     * Render Step 3
+     ****************************************************/
+
+    function renderFinalScreen(data) {
+      renderFinalSummary(data.agentSummary || {});
+      renderFinalSurveyTab(data.finalSurvey || []);
+      renderMappingTab(data.techniqueMapping || []);
+      renderDiagnosisTab(data.designDiagnosis || {});
+      renderInterpretationTab(data.interpretationGuide || []);
+      renderLogTab(data.improvementLog || []);
+      activateTab("finalSurvey");
+    }
+
+    function renderFinalSummary(summary = {}) {
+      const cards = [
+        ["최종 설문 유형", summary.inferredSurveyType || "-"],
+        ["최종 문항 수", summary.finalQuestionCount ? summary.finalQuestionCount + "개" : "-"],
+        ["설계 전략", summary.designStrategy || "-"],
+        ["주요 설계 중점", arrayToOptionsText(summary.mainDesignFocus || []) || "-"]
+      ];
+
+      document.getElementById("finalSummaryPanel").innerHTML = cards.map(([k, v]) => `
+        <div class="summary-card">
+          <div class="k">${escapeHtml(k)}</div>
+          <div class="v">${escapeHtml(v)}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderFinalSurveyTab(items) {
+      document.getElementById("tab-finalSurvey").innerHTML = `
+        <div class="section-title">
+          <div>
+            <h3>최종 설문지</h3>
+            <div class="hint">사용자가 확정한 최종 문항입니다. 엑셀 다운로드 시 이 문항이 기준이 됩니다.</div>
+          </div>
+          <span class="pill">${items.length}개 문항</span>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>구분</th>
+                <th>문항</th>
+                <th>유형</th>
+                <th>보기</th>
+                <th>필수여부</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${items.map((item, idx) => `
+                <tr>
+                  <td>${idx + 1}</td>
+                  <td>${escapeHtml(item.section || "")}</td>
+                  <td style="font-size:15px; font-weight:700; min-width:420px;">${escapeHtml(item.question || "")}</td>
+                  <td>${escapeHtml(item.type || "")}</td>
+                  <td>${escapeHtml(arrayToOptionsText(item.options || []))}</td>
+                  <td>${item.required === false ? "선택" : "필수"}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderMappingTab(items) {
+      document.getElementById("tab-mapping").innerHTML = `
+        <div class="section-title">
+          <div>
+            <h3>척도·기법 매핑</h3>
+            <div class="hint">최종 문항 전체에 대해 1:1로 측정영역, 적용기법, 척도 선택 이유를 제공합니다.</div>
+          </div>
+          <span class="pill">${items.length}개 매핑</span>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>구분</th>
+                <th>문항</th>
+                <th>유형</th>
+                <th>측정영역</th>
+                <th>적용기법</th>
+                <th>설계의도</th>
+                <th>척도 선택 이유</th>
+                <th>확보 데이터</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${items.map(item => `
+                <tr>
+                  <td>${escapeHtml(item.no ?? "")}</td>
+                  <td>${escapeHtml(item.section || "")}</td>
+                  <td>${escapeHtml(item.question || "")}</td>
+                  <td>${escapeHtml(item.type || "")}</td>
+                  <td>${escapeHtml(item.measurementArea || "")}</td>
+                  <td>${escapeHtml(item.technique || "")}</td>
+                  <td>${escapeHtml(item.designIntent || "")}</td>
+                  <td>${escapeHtml(item.scaleReason || "")}</td>
+                  <td>${escapeHtml(item.expectedData || "")}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderDiagnosisTab(diagnosis) {
+      document.getElementById("tab-diagnosis").innerHTML = `
+        <div class="section-title">
+          <div>
+            <h3>설계 진단</h3>
+            <div class="hint">100점 점수보다, 이번 설문이 무엇을 중점적으로 설계했는지와 결과를 어떻게 활용할지를 설명합니다.</div>
+          </div>
+        </div>
+
+        <div class="notice" style="margin-bottom:16px;">
+          <h3>설계 진단 요약</h3>
+          <p>${escapeHtml(diagnosis.summary || "")}</p>
+        </div>
+
+        <div class="notice-grid">
+          <div class="notice">
+            <h3>중점 설계 방향</h3>
+            ${renderList(diagnosis.designFocus)}
+          </div>
+          <div class="notice">
+            <h3>데이터 확보 전략</h3>
+            ${renderList(diagnosis.dataStrategy)}
+          </div>
+        </div>
+
+        <div class="notice-grid">
+          <div class="notice">
+            <h3>설계상 강점</h3>
+            ${renderList(diagnosis.strengths)}
+          </div>
+          <div class="notice">
+            <h3>해석·사용 시 주의사항</h3>
+            ${renderList(diagnosis.cautions)}
+          </div>
+        </div>
+
+        <div class="notice" style="margin-bottom:18px;">
+          <h3>결과 활용 권장 방식</h3>
+          ${renderList(diagnosis.recommendedUse)}
+        </div>
+
+        <div class="section-title">
+        <div>
+          <h3>문항 유형별 사용 현황</h3>
+            <div class="hint">최종 문항 전체를 기준으로 어떤 척도와 문항 유형이 사용되었는지 보여줍니다.</div>
+         </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>척도/유형</th>
+                <th>사용 목적</th>
+                <th>사용 이유</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${(diagnosis.scaleUsage || []).map(item => `
+                <tr>
+                  <td>${escapeHtml(item.scale || "")}</td>
+                  <td>${escapeHtml(item.usedFor || "")}</td>
+                  <td>${escapeHtml(item.reason || "")}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderInterpretationTab(items) {
+      document.getElementById("tab-interpretation").innerHTML = `
+        <div class="section-title">
+          <div>
+            <h3>결과 해석 가이드</h3>
+            <div class="hint">최종 문항 전체에 대해 분석 포인트, 해석 기준, 후속 조치, 추천 분석 방식을 제공합니다.</div>
+          </div>
+          <span class="pill">${items.length}개 가이드</span>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>구분</th>
+                <th>문항</th>
+                <th>분석 포인트</th>
+                <th>해석 기준</th>
+                <th>후속 조치</th>
+                <th>추천 분석 방식</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${items.map(item => `
+                <tr>
+                  <td>${escapeHtml(item.no ?? "")}</td>
+                  <td>${escapeHtml(item.section || "")}</td>
+                  <td>${escapeHtml(item.question || "")}</td>
+                  <td>${escapeHtml(item.analysisPoint || "")}</td>
+                  <td>${escapeHtml(item.interpretationRule || "")}</td>
+                  <td>${escapeHtml(item.followUpAction || "")}</td>
+                  <td>${escapeHtml(item.recommendedChart || "")}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderLogTab(items) {
+      document.getElementById("tab-log").innerHTML = `
+        <div class="section-title">
+          <div>
+            <h3>Agent 개선 로그</h3>
+            <div class="hint">초안에서 최종본으로 바뀐 내용을 사용자 피드백과 함께 보여줍니다.</div>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>구분</th>
+                <th>초안 상태</th>
+                <th>사용자 피드백/자동진단</th>
+                <th>최종 개선</th>
+                <th>개선 이유</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${items.map(item => `
+                <tr>
+                  <td>${escapeHtml(item.category || "")}</td>
+                  <td>${escapeHtml(item.before || "")}</td>
+                  <td>${escapeHtml(item.userFeedback || "")}</td>
+                  <td>${escapeHtml(item.after || "")}</td>
+                  <td>${escapeHtml(item.reason || "")}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    /****************************************************
+     * Excel Download
+     ****************************************************/
+
+    function downloadSurveyExcel() {
+      if (!ensureExcelReady()) return;
+      if (!appState.finalReport) {
+        alert("최종 리포트를 먼저 생성해 주세요.");
+        return;
+      }
+
+      const wb = XLSX.utils.book_new();
+      addJsonSheet(wb, "최종설문지", normalizeFinalSurveyRows(appState.finalReport.finalSurvey || []));
+      XLSX.writeFile(wb, makeFileName("에디V2_최종설문지", "xlsx"));
+    }
+
+    function downloadReportExcel() {
+      if (!ensureExcelReady()) return;
+      if (!appState.finalReport) {
+        alert("최종 리포트를 먼저 생성해 주세요.");
+        return;
+      }
+
+      const wb = buildReportWorkbook(false);
+      XLSX.writeFile(wb, makeFileName("에디V2_설계리포트", "xlsx"));
+    }
+
+    function downloadFullExcel() {
+      if (!ensureExcelReady()) return;
+      if (!appState.finalReport) {
+        alert("최종 리포트를 먼저 생성해 주세요.");
+        return;
+      }
+
+      const wb = buildReportWorkbook(true);
+      XLSX.writeFile(wb, makeFileName("에디V2_전체통합", "xlsx"));
+    }
+
+    function buildReportWorkbook(includeSurveySheet) {
+      const data = appState.finalReport || {};
+      const wb = XLSX.utils.book_new();
+
+      addAoaSheet(wb, "Agent요약", summaryToAoa(data.agentSummary || {}, appState.originalInput || {}));
+
+      if (includeSurveySheet) {
+        addJsonSheet(wb, "최종설문지", normalizeFinalSurveyRows(data.finalSurvey || []));
+      }
+
+      addJsonSheet(wb, "척도기법매핑", normalizeMappingRows(data.techniqueMapping || []));
+      addJsonSheet(wb, "설계진단_척도사용", normalizeScaleUsageRows(data.designDiagnosis?.scaleUsage || []));
+      addJsonSheet(wb, "설계진단_요약", normalizeDiagnosisRows(data.designDiagnosis || {}));
+      addJsonSheet(wb, "결과해석가이드", normalizeInterpretationRows(data.interpretationGuide || []));
+      addJsonSheet(wb, "개선로그", normalizeLogRows(data.improvementLog || []));
+      addJsonSheet(wb, "피드백이력", normalizeFeedbackHistoryRows(appState.feedbackHistory || []));
+
+      return wb;
+    }
+
+    function summaryToAoa(summary, input) {
+      return [
+        ["항목", "내용"],
+        ["에디 버전", summary.agentVersion || "Eddie V2.1"],
+        ["설문 주제", input.topic || ""],
+        ["설문 목적", input.purpose || ""],
+        ["응답 대상", input.target || ""],
+        ["최종 설문 유형", summary.inferredSurveyType || ""],
+        ["설문 유형 판단 이유", summary.surveyTypeReason || ""],
+        ["최종 문항 수", summary.finalQuestionCount || ""],
+        ["설계 전략", summary.designStrategy || ""],
+        ["설계 중점", arrayToOptionsText(summary.mainDesignFocus || [])],
+        ["전제사항", arrayToOptionsText(summary.assumptions || [])]
+      ];
+    }
+
+    function normalizeFinalSurveyRows(items) {
+      return items.map((item, index) => ({
+        문항번호: index + 1,
+        구분: item.section || "",
+        문항: item.question || "",
+        유형: item.type || "",
+        보기: arrayToOptionsText(item.options || []),
+        필수여부: item.required === false ? "선택" : "필수"
+      }));
+    }
+
+    function normalizeMappingRows(items) {
+      return items.map(item => ({
+        문항번호: item.no ?? "",
+        구분: item.section || "",
+        문항: item.question || "",
+        유형: item.type || "",
+        측정영역: item.measurementArea || "",
+        적용기법: item.technique || "",
+        설계의도: item.designIntent || "",
+        척도선택이유: item.scaleReason || "",
+        확보가능데이터: item.expectedData || ""
+      }));
+    }
+
+    function normalizeScaleUsageRows(items) {
+      return items.map(item => ({
+        척도유형: item.scale || "",
+        사용목적: item.usedFor || "",
+        사용이유: item.reason || ""
+      }));
+    }
+
+    function normalizeDiagnosisRows(diagnosis) {
+      const rows = [];
+
+      rows.push({ 구분: "설계 진단 요약", 내용: diagnosis.summary || "" });
+
+      (diagnosis.designFocus || []).forEach(item => rows.push({ 구분: "중점 설계 방향", 내용: item }));
+      (diagnosis.dataStrategy || []).forEach(item => rows.push({ 구분: "데이터 확보 전략", 내용: item }));
+      (diagnosis.strengths || []).forEach(item => rows.push({ 구분: "설계상 강점", 내용: item }));
+      (diagnosis.cautions || []).forEach(item => rows.push({ 구분: "주의사항", 내용: item }));
+      (diagnosis.recommendedUse || []).forEach(item => rows.push({ 구분: "결과 활용 권장 방식", 내용: item }));
+
+      return rows.length ? rows : [{ 구분: "내용", 내용: "데이터 없음" }];
+    }
+
+    function normalizeInterpretationRows(items) {
+      return items.map(item => ({
+        문항번호: item.no ?? "",
+        구분: item.section || "",
+        문항: item.question || "",
+        분석포인트: item.analysisPoint || "",
+        해석기준: item.interpretationRule || "",
+        후속조치: item.followUpAction || "",
+        추천분석방식: item.recommendedChart || ""
+      }));
+    }
+
+    function normalizeLogRows(items) {
+      return items.map(item => ({
+        구분: item.category || "",
+        초안상태: item.before || "",
+        사용자피드백_자동진단: item.userFeedback || "",
+        최종개선: item.after || "",
+        개선이유: item.reason || ""
+      }));
+    }
+
+    function normalizeFeedbackHistoryRows(items) {
+      return items.map((item, index) => ({
+        순번: index + 1,
+        피드백: item.feedback || item,
+        생성시간: item.createdAt || ""
+      }));
+    }
+
+    function addJsonSheet(wb, sheetName, rows) {
+      const safeRows = rows && rows.length ? rows : [{ 내용: "데이터 없음" }];
+      const ws = XLSX.utils.json_to_sheet(safeRows);
+      autoWidth(ws, safeRows);
+      XLSX.utils.book_append_sheet(wb, ws, sheetName.slice(0, 31));
+    }
+
+    function addAoaSheet(wb, sheetName, aoa) {
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws["!cols"] = [{ wch: 24 }, { wch: 95 }];
+      XLSX.utils.book_append_sheet(wb, ws, sheetName.slice(0, 31));
+    }
+
+    function autoWidth(ws, rows) {
+      const keys = Object.keys(rows[0] || {});
+      ws["!cols"] = keys.map(key => {
+        const maxLength = Math.max(
+          String(key).length,
+          ...rows.map(row => String(row[key] ?? "").length)
+        );
+        return { wch: Math.min(Math.max(maxLength + 2, 12), 60) };
+      });
+    }
+
+    /****************************************************
+     * API
+     ****************************************************/
+
+    async function postToBackend(payload) {
+      const response = await fetch(BACKEND_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const text = await response.text();
+
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch (error) {
+        throw new Error("백엔드 응답 JSON 파싱 실패\n\n" + text);
+      }
+
+      return result;
+    }
+
+    /****************************************************
+     * Navigation
+     ****************************************************/
+
+    function goToScreen(screenNumber) {
+      clearError();
+
+      [1, 2, 3].forEach(num => {
+        document.getElementById("screen" + num).classList.toggle("active", num === screenNumber);
+        document.getElementById("stepCard" + num).classList.toggle("active", num === screenNumber);
+        document.getElementById("stepCard" + num).classList.toggle("done", num < screenNumber);
+      });
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function activateTab(tabName) {
+      document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.tab === tabName);
+      });
+
+      document.querySelectorAll(".tab-content").forEach(content => {
+        content.classList.toggle("active", content.id === "tab-" + tabName);
+      });
+    }
+
+    /****************************************************
+     * Utilities
+     ****************************************************/
+
+    function valueOf(id) {
+      return (document.getElementById(id)?.value || "").trim();
+    }
+
+    function numberValueOf(id) {
+      const value = valueOf(id);
+      if (!value) return null;
+      const number = Number(value);
+      return Number.isNaN(number) ? null : number;
+    }
+
+    function getCheckedValue(name) {
+      return document.querySelector(`input[name="${name}"]:checked`)?.value || "";
+    }
+
+    function setLoading(isLoading, title, text) {
+      document.getElementById("loadingOverlay").classList.toggle("active", isLoading);
+
+      if (title) {
+        document.getElementById("loadingTitle").textContent = title;
+      }
+
+      if (text) {
+        document.getElementById("loadingText").textContent = text;
+      }
+    }
+
+    function showError(message) {
+      const box = document.getElementById("errorBox");
+      box.textContent = message;
+      box.classList.add("active");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function clearError() {
+      const box = document.getElementById("errorBox");
+      box.textContent = "";
+      box.classList.remove("active");
+    }
+
+    function validateBackendUrl() {
+      if (!BACKEND_URL || BACKEND_URL.includes("여기에_GAS")) {
+        showError("BACKEND_URL에 GAS 웹앱 URL을 먼저 입력해 주세요.");
+        return false;
+      }
+
+      return true;
+    }
+
+    function renderList(items) {
+      if (!items || !items.length) {
+        return `<p class="hint">내용 없음</p>`;
+      }
+
+      return `
+        <ul>
+          ${items.map(item => `<li>${escapeHtml(item)}</li>`).join("")}
+        </ul>
+      `;
+    }
+
+    function arrayToOptionsText(value) {
+      if (Array.isArray(value)) {
+        return value.join(" | ");
+      }
+
+      return value || "";
+    }
+
+    function optionsTextToArray(text) {
+      if (!text) return [];
+
+      return text
+        .split("|")
+        .map(item => item.trim())
+        .filter(Boolean);
+    }
+
+    function textOfCell(row, selector) {
+      return (row.querySelector(selector)?.innerText || "").trim();
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function escapeForJs(value) {
+      return String(value ?? "")
+        .replaceAll("\\", "\\\\")
+        .replaceAll("'", "\\'")
+        .replaceAll("\n", "\\n");
+    }
+
+    function clone(value) {
+      return JSON.parse(JSON.stringify(value || null));
+    }
+
+    function ensureExcelReady() {
+      if (typeof XLSX === "undefined") {
+        alert("엑셀 라이브러리가 로드되지 않았습니다. 인터넷 연결 또는 사내망 차단 여부를 확인해 주세요.");
+        return false;
+      }
+
+      return true;
+    }
+
+    function makeFileName(prefix, ext) {
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, "0");
+      const dd = String(now.getDate()).padStart(2, "0");
+      const hh = String(now.getHours()).padStart(2, "0");
+      const mi = String(now.getMinutes()).padStart(2, "0");
+      return `${prefix}_${yyyy}${mm}${dd}_${hh}${mi}.${ext}`;
+    }
+
+    function resetAll() {
+      if (!confirm("현재 생성된 초안과 피드백 이력을 모두 초기화할까요?")) return;
+
+      appState.originalInput = null;
+      appState.originalDraftSurvey = [];
+      appState.currentSurvey = [];
+      appState.feedbackHistory = [];
+      appState.changeHistory = [];
+      appState.draftSummary = null;
+      appState.draftDiagnosis = null;
+      appState.finalReport = null;
+
+      document.getElementById("userFeedback").value = "";
+      goToScreen(1);
+    }
+
+    function fillSample() {
+      document.getElementById("topic").value = "생성형 AI 교육 만족도 조사";
+      document.getElementById("purpose").value = "교육 만족도와 업무 적용 가능성을 파악하고, 향후 생성형 AI 교육의 개선점과 추가 지원 필요 영역을 도출";
+      document.getElementById("target").value = "전사 임직원 중 생성형 AI 교육 수강자";
+      document.getElementById("surveyType").value = "auto";
+      document.getElementById("mustInclude").value = "교육 내용 이해도, 업무 적용 가능성, 추가 교육 니즈, 개선 우선순위";
+      document.getElementById("exclude").value = "개인정보를 직접 묻는 문항, 부정형 문항";
+      document.getElementById("additionalContext").value = "교육 주제는 생성형 AI와 새로운 업무 방식이며, 주요 내용은 생성형 AI 시대 변화, 생성형 AI 작동 방식, AI 시대 우리가 준비해야 하는 것";
+    }
+  </script>
+</body>
+</html>
