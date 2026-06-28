@@ -95,23 +95,28 @@
     }
 
     .step-card {
-      background: rgba(255, 255, 255, 0.88);
-      border: 1px solid var(--line);
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
       border-radius: 16px;
       padding: 16px 18px;
-      box-shadow: 0 8px 22px rgba(29, 78, 216, 0.08);
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
       opacity: 0.72;
       position: relative;
       overflow: hidden;
+      transition: transform 0.18s, opacity 0.18s, box-shadow 0.18s, background 0.18s, border-color 0.18s;
     }
 
     .step-card.active {
       opacity: 1;
-      box-shadow: 0 16px 32px rgba(15, 23, 42, 0.14);
+      color: white;
+      box-shadow: 0 18px 34px var(--step-shadow);
+      background: var(--step-bg);
+      border-color: var(--step-color);
+      transform: translateY(-1px);
     }
 
     .step-card.done {
-      opacity: 0.9;
+      opacity: 0.64;
     }
 
     .step-card::before {
@@ -119,35 +124,35 @@
       position: absolute;
       inset: 0 auto 0 0;
       width: 6px;
-      background: var(--step-color);
+      background: #cbd5e1;
+    }
+
+    .step-card.active::before {
+      background: rgba(255, 255, 255, 0.46);
     }
 
     .step-card:nth-child(1) {
-      --step-color: #2f6fed;
-      --step-soft: #dfeeff;
-      --step-strong: #1f4fbf;
-      border-color: #bfdbfe;
-      background: #f5f9ff;
+      --step-color: #2563eb;
+      --step-soft: rgba(255, 255, 255, 0.22);
+      --step-strong: #ffffff;
+      --step-shadow: rgba(37, 99, 235, 0.28);
+      --step-bg: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
     }
 
     .step-card:nth-child(2) {
-      --step-color: #f59e0b;
-      --step-soft: #fef3c7;
-      --step-strong: #92400e;
-      border-color: #fde68a;
-      background: #fffbeb;
+      --step-color: #d97706;
+      --step-soft: rgba(255, 255, 255, 0.22);
+      --step-strong: #ffffff;
+      --step-shadow: rgba(217, 119, 6, 0.3);
+      --step-bg: linear-gradient(135deg, #b45309 0%, #f59e0b 100%);
     }
 
     .step-card:nth-child(3) {
-      --step-color: #16a34a;
-      --step-soft: #dcfce7;
-      --step-strong: #166534;
-      border-color: #bbf7d0;
-      background: #f0fdf4;
-    }
-
-    .step-card.active {
-      border-color: var(--step-color);
+      --step-color: #059669;
+      --step-soft: rgba(255, 255, 255, 0.22);
+      --step-strong: #ffffff;
+      --step-shadow: rgba(5, 150, 105, 0.28);
+      --step-bg: linear-gradient(135deg, #047857 0%, #10b981 100%);
     }
 
     .step-card.active strong {
@@ -161,11 +166,17 @@
       align-items: center;
       justify-content: center;
       border-radius: 50%;
-      background: var(--step-soft);
-      color: var(--step-strong);
+      background: #eef2f7;
+      color: #64748b;
       font-weight: 950;
       font-size: 13px;
       margin-bottom: 8px;
+    }
+
+    .step-card.active .num {
+      background: var(--step-soft);
+      color: var(--step-strong);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
     }
 
     .step-card strong {
@@ -180,6 +191,10 @@
       font-size: 12px;
       margin-top: 4px;
       line-height: 1.5;
+    }
+
+    .step-card.active span {
+      color: rgba(255, 255, 255, 0.86);
     }
 
     .card {
@@ -720,8 +735,8 @@
       </div>
       <h1>설문 설계 Agent 에디</h1>
       <p>
-        한 번에 완성본을 던져주는 방식이 아니라, 초안 생성 후 약점을 함께 확인하고
-        사용자 피드백을 반영해 최종 설문과 설계 리포트를 생성합니다.
+        주요 키워드를 바탕으로 설문 초안을 생성하고, 사용자 피드백을 반영해
+        최종 설문지와 설계 리포트를 제공합니다.
       </p>
     </section>
 
