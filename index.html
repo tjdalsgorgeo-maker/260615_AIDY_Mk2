@@ -100,17 +100,58 @@
       border-radius: 16px;
       padding: 16px 18px;
       box-shadow: 0 8px 22px rgba(29, 78, 216, 0.08);
-      opacity: 0.64;
+      opacity: 0.72;
+      position: relative;
+      overflow: hidden;
     }
 
     .step-card.active {
       opacity: 1;
-      border-color: #93c5fd;
-      box-shadow: var(--shadow);
+      box-shadow: 0 16px 32px rgba(15, 23, 42, 0.14);
     }
 
     .step-card.done {
-      opacity: 0.82;
+      opacity: 0.9;
+    }
+
+    .step-card::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 6px;
+      background: var(--step-color);
+    }
+
+    .step-card:nth-child(1) {
+      --step-color: #2f6fed;
+      --step-soft: #dfeeff;
+      --step-strong: #1f4fbf;
+      border-color: #bfdbfe;
+      background: #f5f9ff;
+    }
+
+    .step-card:nth-child(2) {
+      --step-color: #f59e0b;
+      --step-soft: #fef3c7;
+      --step-strong: #92400e;
+      border-color: #fde68a;
+      background: #fffbeb;
+    }
+
+    .step-card:nth-child(3) {
+      --step-color: #16a34a;
+      --step-soft: #dcfce7;
+      --step-strong: #166534;
+      border-color: #bbf7d0;
+      background: #f0fdf4;
+    }
+
+    .step-card.active {
+      border-color: var(--step-color);
+    }
+
+    .step-card.active strong {
+      color: var(--step-strong);
     }
 
     .step-card .num {
@@ -120,8 +161,8 @@
       align-items: center;
       justify-content: center;
       border-radius: 50%;
-      background: var(--primary-soft);
-      color: var(--primary-dark);
+      background: var(--step-soft);
+      color: var(--step-strong);
       font-weight: 950;
       font-size: 13px;
       margin-bottom: 8px;
@@ -517,6 +558,18 @@
       font-size: 15px;
     }
 
+    .save-status {
+      display: none;
+      margin-top: 10px;
+      color: var(--good);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .save-status.active {
+      display: block;
+    }
+
     .tabs {
       display: flex;
       gap: 8px;
@@ -654,7 +707,7 @@
   <div class="loading-overlay" id="loadingOverlay">
     <div class="loading-box">
       <div class="spinner"></div>
-      <h3 id="loadingTitle">에디 V2.1이 처리 중입니다</h3>
+      <h3 id="loadingTitle">설문 설계 Agent 에디가 처리 중입니다</h3>
       <p class="hint" id="loadingText">잠시만 기다려 주세요.</p>
     </div>
   </div>
@@ -662,10 +715,10 @@
   <main class="app">
     <section class="hero">
       <div class="hero-top">
-        <div class="badge">😎 Eddie V2.1 · Survey Design Agent</div>
+        <div class="badge">😎 설문 설계 Agent 에디</div>
         <div class="badge">초안 → 진단 → 피드백 → 최종 리포트</div>
       </div>
-      <h1>에디 V2.1 설문 설계 Agent</h1>
+      <h1>설문 설계 Agent 에디</h1>
       <p>
         한 번에 완성본을 던져주는 방식이 아니라, 초안 생성 후 약점을 함께 확인하고
         사용자 피드백을 반영해 최종 설문과 설계 리포트를 생성합니다.
@@ -847,11 +900,13 @@
             <div class="hint" id="feedbackExamples" style="margin-top:8px;"></div>
 
             <div class="btn-row">
-              <button type="button" class="btn-secondary" onclick="refineDraft()">피드백 반영해서 재생성</button>
               <button type="button" class="btn-primary" onclick="finalizeSurvey()">이 문항으로 최종 확정</button>
-              <button type="button" class="btn-ghost" onclick="goToScreen(1)">입력 수정하기</button>
+              <button type="button" class="btn-secondary" onclick="saveEditedDraft()">수정 내용 반영</button>
+              <button type="button" class="btn-secondary" onclick="refineDraft()">피드백 반영해서 재생성</button>
+              <button type="button" class="btn-ghost" onclick="goToScreen(1)">내용 다시 입력</button>
               <button type="button" class="btn-danger" onclick="resetAll()">처음부터 다시</button>
             </div>
+            <div class="save-status" id="draftSaveStatus">수정한 초안 문항이 반영되었습니다.</div>
           </div>
         </div>
       </div>
@@ -894,7 +949,7 @@
 
   <script>
     /****************************************************
-     * Eddie V2.1 Frontend
+     * 설문 설계 Agent 에디 Frontend
      ****************************************************/
 
     const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzpOcUARA1atA6A8mx1dhfmG3BgzQVV58EoNHS2FLsh4mYIER_S2QFD3fJbmiLMjd5Y/exec";
@@ -1128,6 +1183,7 @@
      ****************************************************/
 
     function renderDraftScreen() {
+      hideDraftSaveStatus();
       renderDraftSummary();
       renderDraftDiagnosis();
       renderDraftTable(appState.currentSurvey || []);
@@ -1191,7 +1247,9 @@
     function renderDraftTable(items) {
       document.getElementById("draftCountPill").textContent = `${items.length}개 문항`;
 
-      document.getElementById("draftTableArea").innerHTML = `
+      const draftTableArea = document.getElementById("draftTableArea");
+
+      draftTableArea.innerHTML = `
         <div class="table-wrap">
           <table class="draft-table">
             <thead>
@@ -1211,6 +1269,14 @@
           </table>
         </div>
       `;
+
+      draftTableArea.querySelectorAll('[contenteditable="true"]').forEach(cell => {
+        cell.addEventListener("input", hideDraftSaveStatus);
+      });
+
+      draftTableArea.querySelectorAll("select, input").forEach(field => {
+        field.addEventListener("change", hideDraftSaveStatus);
+      });
     }
 
     function renderDraftRow(item, idx) {
@@ -1234,12 +1300,20 @@
     }
 
     function getSelectedDraftRows() {
+      return collectDraftRows(true);
+    }
+
+    function getAllDraftRows() {
+      return collectDraftRows(false);
+    }
+
+    function collectDraftRows(selectedOnly) {
       const rows = [];
       const trs = document.querySelectorAll(".draft-row");
 
       trs.forEach(tr => {
         const checked = tr.querySelector(".use-check")?.checked;
-        if (!checked) return;
+        if (selectedOnly && !checked) return;
 
         rows.push({
           no: rows.length + 1,
@@ -1252,6 +1326,30 @@
       });
 
       return rows;
+    }
+
+    function saveEditedDraft() {
+      clearError();
+
+      const editedRows = getAllDraftRows();
+
+      if (!editedRows.length) {
+        showError("반영할 초안 문항이 없습니다.");
+        return;
+      }
+
+      appState.currentSurvey = clone(editedRows);
+
+      const status = document.getElementById("draftSaveStatus");
+      status.textContent = `${editedRows.length}개 초안 문항의 수정 내용이 반영되었습니다.`;
+      status.classList.add("active");
+    }
+
+    function hideDraftSaveStatus() {
+      const status = document.getElementById("draftSaveStatus");
+      if (!status) return;
+
+      status.classList.remove("active");
     }
 
     /****************************************************
@@ -1529,7 +1627,7 @@
 
       const wb = XLSX.utils.book_new();
       addJsonSheet(wb, "최종설문지", normalizeFinalSurveyRows(appState.finalReport.finalSurvey || []));
-      XLSX.writeFile(wb, makeFileName("에디V2_최종설문지", "xlsx"));
+      XLSX.writeFile(wb, makeFileName("설문설계Agent에디_최종설문지", "xlsx"));
     }
 
     function downloadReportExcel() {
@@ -1540,7 +1638,7 @@
       }
 
       const wb = buildReportWorkbook(false);
-      XLSX.writeFile(wb, makeFileName("에디V2_설계리포트", "xlsx"));
+      XLSX.writeFile(wb, makeFileName("설문설계Agent에디_설계리포트", "xlsx"));
     }
 
     function downloadFullExcel() {
@@ -1551,7 +1649,7 @@
       }
 
       const wb = buildReportWorkbook(true);
-      XLSX.writeFile(wb, makeFileName("에디V2_전체통합", "xlsx"));
+      XLSX.writeFile(wb, makeFileName("설문설계Agent에디_전체통합", "xlsx"));
     }
 
     function buildReportWorkbook(includeSurveySheet) {
@@ -1577,7 +1675,7 @@
     function summaryToAoa(summary, input) {
       return [
         ["항목", "내용"],
-        ["에디 버전", summary.agentVersion || "Eddie V2.1"],
+        ["에디 버전", summary.agentVersion || "설문 설계 Agent 에디"],
         ["설문 주제", input.topic || ""],
         ["설문 목적", input.purpose || ""],
         ["응답 대상", input.target || ""],
